@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>S.I.G.H.E.L. Ultimate - Gerador de Pistas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Kalam:wght@300;700&family=Courier+Prime&family=Libre+Baskerville:ital@0;1&family=VT323&family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --azul-ordem: #284245;
+            --sangue: #8a0303;
+            --papel-cor: #fdfaf3;
+            --bg-dark: #0a0a0c;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: #ccc;
+            font-family: 'Inter', sans-serif;
+            margin: 0; display: flex; height: 100vh; overflow: hidden;
+        }
+
+        /* PAINEL DE CONTROLE */
+        #sidebar {
+            width: 400px; background: #151518; border-right: 2px solid #25252b;
+            padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+
+        h2 { color: var(--azul-ordem); font-family: 'VT323', monospace; font-size: 1.8rem; margin: 0; filter: brightness(1.5); }
+        label { font-size: 10px; text-transform: uppercase; color: #71717a; font-weight: bold; margin-top: 5px; }
+        
+        input, textarea, select {
+            width: 100%; padding: 10px; background: #27272a; border: 1px solid #3f3f46; color: #fff; border-radius: 4px; box-sizing: border-box;
+        }
+
+        button {
+            padding: 15px; background: var(--azul-ordem); border: none; font-weight: bold; cursor: pointer; border-radius: 4px; color: #fff; transition: 0.3s;
+        }
+        button:hover { background: #3a5e62; }
+
+        /* ÁREA DE VISUALIZAÇÃO */
+        #viewport {
+            flex-grow: 1; padding: 40px; display: flex; justify-content: center; overflow-y: auto;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px); background-size: 25px 25px;
+        }
+
+        .documento {
+            background-color: var(--papel-cor);
+            background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+            color: #111;
+            padding: 25mm; /* Margem padrão A4 */
+            box-shadow: 0 25px 50px rgba(0,0,0,0.9);
+            position: relative;
+            box-sizing: border-box;
+            min-height: 297mm;
+            width: 210mm;
+            word-wrap: break-word;
+            text-align: left;
+        }
+
+        /* --- ESTILOS ESPECÍFICOS --- */
+
+        .doc-ordem { border-top: 20px solid #000; font-family: 'Courier Prime', monospace; }
+        .doc-ordem hr { border: 0; border-top: 1px solid #000; margin: 20px 0; }
+
+        .doc-iml { border: 1px solid #000; font-family: Arial, Helvetica, sans-serif; }
+        .iml-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; font-weight: bold; }
+
+        .doc-jornal { background-color: #dcd7c9; font-family: 'Libre Baskerville', serif; padding: 15mm; }
+        .jornal-title { text-align: center; font-size: 3.5rem; border-bottom: 5px double #000; margin-bottom: 10px; font-weight: 900; }
+        .jornal-cols { column-count: 2; column-gap: 30px; text-align: justify; line-height: 1.3; }
+        .jornal-cols h2 { font-size: 1.5rem; line-height: 1.1; margin-top: 0; color: #000; font-family: 'Libre Baskerville', serif; }
+
+        .doc-email { font-family: 'Inter', sans-serif; background: #fff; }
+        .email-bar { background: #f3f4f6; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
+
+        .doc-rasgado { 
+            background: #fdfdfd; font-family: 'Special Elite', cursive;
+            clip-path: polygon(2% 2%, 98% 0%, 100% 20%, 95% 50%, 100% 80%, 98% 100%, 2% 98%, 0% 80%, 5% 50%, 0% 20%);
+            padding: 30mm 20mm;
+        }
+
+        .doc-postit { 
+            width: 120mm; min-height: 120mm; background: #fffa81; 
+            font-family: 'Kalam', cursive; padding: 40px; transform: rotate(1deg);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2); margin-top: 50px;
+        }
+
+        .doc-digital { background: #000; color: #00ff00; font-family: 'VT323', monospace; padding: 40px; }
+
+        .doc-hospital { border-left: 20px solid #2c5282; background: #f8fafc; }
+
+        .doc-obito { border: 12px double #444; text-align: center; font-family: serif; padding: 30mm 20mm; }
+        .obito-seal { margin: 40px auto; width: 80px; height: 80px; border: 2px solid #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.5; }
+
+        .doc-telegrama { background: #cfc8b8; font-family: 'Courier Prime', monospace; text-transform: uppercase; padding: 20mm; }
+
+        .doc-transcricao { background: #eee; border-left: 8px solid #555; font-family: 'Courier New', monospace; white-space: pre-wrap; }
+
+        .doc-polaroid { width: 130mm; min-height: 160mm; padding: 20px 20px 60px 20px; text-align: center; background: #fff; margin-top: 40px; }
+        .pol-img { width: 100%; aspect-ratio: 1/1; background: #111; margin-bottom: 20px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; color: #333; font-weight: bold; font-size: 1.2rem; }
+
+        /* Utilitários */
+        .censurado { background: #000; color: #000; padding: 0 4px; border-radius: 2px; }
+        .carimbo { 
+            position: absolute; top: 60px; right: 60px; border: 5px solid var(--sangue); 
+            color: var(--sangue); padding: 10px 20px; font-weight: bold; 
+            transform: rotate(20deg); opacity: 0.6; font-size: 1.8rem; 
+            pointer-events: none; z-index: 10; text-transform: uppercase;
+        }
+
+        @media print {
+            #sidebar { display: none; }
+            #viewport { padding: 0; background: none; display: block; }
+            .documento { box-shadow: none; margin: 0 auto; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>S.I.G.H.E.L. ULTIMATE</h2>
+    
+    <label>Tipo de Documento</label>
+    <select id="tipo" onchange="render()">
+        <optgroup label="Oficiais">
+            <option value="ordem">Relatório Ordo Realitas</option>
+            <option value="iml">Laudo do IML</option>
+            <option value="hospital">Prontuário Médico</option>
+            <option value="obito">Certidão de Óbito</option>
+        </optgroup>
+        <optgroup label="Comunicação">
+            <option value="email">E-mail Corporativo</option>
+            <option value="telegrama">Telegrama Antigo</option>
+            <option value="transcricao">Transcrição de Áudio</option>
+        </optgroup>
+        <optgroup label="Fragmentos">
+            <option value="jornal">Recorte de Jornal</option>
+            <option value="rasgado">Papel Rasgado / Diário</option>
+            <option value="postit">Post-it (Lembrete)</option>
+            <option value="polaroid">Foto Polaroid</option>
+        </optgroup>
+        <optgroup label="Digital">
+            <option value="digital">Terminal / Arquivo Hackeado</option>
+        </optgroup>
+    </select>
+
+    <label>Autor / Remetente</label>
+    <input type="text" id="autor" placeholder="Ex: Agente Veríssimo / IML" oninput="render()">
+
+    <label>Título / Destinatário</label>
+    <input type="text" id="titulo" placeholder="Ex: Caso #402 - O Incidente" oninput="render()">
+
+    <label>Data / Local</label>
+    <input type="text" id="data" placeholder="Ex: 13/05/2024 - SP" oninput="render()">
+
+    <label>Conteúdo</label>
+    <textarea id="conteudo" rows="10" oninput="render()" placeholder="Escreva aqui. Use [CENSURADO] para esconder segredos."></textarea>
+
+    <label>Carimbo Adicional</label>
+    <input type="text" id="carimbo-txt" placeholder="Ex: CONFIDENCIAL" oninput="render()">
+
+    <button onclick="window.print()">GERAR PDF / IMPRIMIR</button>
+</div>
+
+<div id="viewport">
+    <div id="doc-render" class="documento doc-ordem"></div>
+</div>
+
+<script>
+    function render() {
+        const tipo = document.getElementById('tipo').value;
+        const autor = document.getElementById('autor').value || "---";
+        const titulo = document.getElementById('titulo').value || "---";
+        const data = document.getElementById('data').value || "---";
+        const carimbo = document.getElementById('carimbo-txt').value;
+        let texto = document.getElementById('conteudo').value || "Aguardando entrada de dados...";
+
+        texto = texto.replace(/\[CENSURADO\]/g, '<span class="censurado">XXXXXXXX</span>');
+        texto = texto.replace(/\n/g, '<br>');
+
+        const el = document.getElementById('doc-render');
+        el.className = 'documento doc-' + tipo;
+        
+        let carimboHtml = carimbo ? `<div class="carimbo">${carimbo}</div>` : "";
+        let html = carimboHtml;
+
+        switch(tipo) {
+            case 'ordem':
+                html += `<div style="text-align:center; margin-bottom:30px"><strong>ORDO REALITAS</strong><br><small>DEPARTAMENTO DE DOCUMENTAÇÃO E SIGILO</small></div>
+                         <p><strong>PROCESSO:</strong> ${titulo}<br><strong>AGENTE:</strong> ${autor}<br><strong>DATA:</strong> ${data}</p><hr>${texto}`;
+                break;
+            case 'iml':
+                html += `<div class="iml-header">ESTADO DO RIO GRANDE DO SUL<br>SECRETARIA DE SEGURANÇA PÚBLICA<br>POLÍCIA CIENTÍFICA - IML</div>
+                         <p><strong>OBJETO DO LAUDO:</strong> ${titulo}<br><strong>RESPONSÁVEL:</strong> ${autor}<br><strong>REGISTRO:</strong> ${data}</p><hr><p style="text-align:justify">${texto}</p>`;
+                break;
+            case 'jornal':
+                html += `<div class="jornal-title">O CLARIM</div>
+                         <div style="display:flex;justify-content:space-between;font-size:0.9rem;border-bottom:2px solid #000;margin-bottom:20px;padding:2px 0;"><span>Edição LXIV - ${data}</span><span>PREÇO: RS$3,50</span></div>
+                         <div class="jornal-cols"><h2>${titulo}</h2>${texto}</div>`;
+                break;
+            case 'email':
+                html += `<div style="border-bottom:2px solid #eee; margin-bottom:20px; padding-bottom:10px"><h2>${titulo}</h2></div>
+                         <div class="email-bar"><strong>De:</strong> ${autor}<br><strong>Para:</strong> Investigadores<br><strong>Data:</strong> ${data}</div>
+                         <div style="line-height:1.6">${texto}</div>`;
+                break;
+            case 'rasgado':
+                html += `<div style="text-align:right; font-size:0.9rem; margin-bottom:20px;"><em>${data}</em></div><h2 style="margin-top:0">${titulo}</h2><p style="line-height:1.8">${texto}</p>`;
+                break;
+            case 'postit':
+                html += `<div style="font-size:1.4rem; line-height:1.2"><strong>${titulo}</strong><br><br>${texto}</div>`;
+                break;
+            case 'digital':
+                html += `<p style="opacity:0.7">SIGH_SYSTEM_RECOVERY_TOOL [V.4.0.2]</p><p>> ORIGEM: ${autor}<br>> TIMESTAMP: ${data}<br>> ASSUNTO: ${titulo}</p><hr style="border-color:#00ff00"><p style="font-size:1.2rem">${texto}</p><p class="blink">> _</p>`;
+                break;
+            case 'hospital':
+                html += `<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px">
+                            <div style="color:#2c5282; font-weight:bold; font-size:1.2rem">HOSPITAL MUNICIPAL<br>PRONTUÁRIO DE EMERGÊNCIA</div>
+                            <div style="text-align:right">ID: ${data}</div>
+                         </div>
+                         <p><strong>PACIENTE:</strong> ${titulo}<br><strong>MÉDICO:</strong> ${autor}</p><hr style="border-color:#2c5282">${texto}`;
+                break;
+            case 'obito':
+                html += `<div style="font-size:0.8rem">REPÚBLICA FEDERATIVA DO BRASIL</div><h1 class="obito-titulo">REGISTRO CIVIL DE ÓBITO</h1>
+                         <div style="text-align:left; margin:40px 0; border:1px solid #444; padding:20px">
+                            <p><strong>FALECIDO:</strong> ${titulo}</p>
+                            <p><strong>DATA DO EVENTO:</strong> ${data}</p>
+                            <p><strong>DECLARANTE:</strong> ${autor}</p>
+                            <p><strong>CAUSA MORTIS:</strong> ${texto}</p>
+                         </div>
+                         <div class="obito-seal">SELADO</div>`;
+                break;
+            case 'telegrama':
+                html += `<div style="display:flex; justify-content:space-between; margin-bottom:40px"><strong>TELEGRAPH CO.</strong><span>${data}</span></div>
+                         <p>ENTREGA URGENTE PARA: ${titulo} STOP</p><br><p style="font-size:1.4rem; border:1px solid #888; padding:20px">${texto}</p><br><p>REMETENTE: ${autor} STOP</p>`;
+                break;
+            case 'transcricao':
+                html += `<div style="text-align:center; letter-spacing:3px; margin-bottom:30px; border-bottom:1px solid #555">ARQUIVO DE ÁUDIO RECONSTITUÍDO</div>
+                         <p><strong>REF:</strong> ${titulo}<br><strong>DATA:</strong> ${data}</p><br>
+                         <p style="font-style:italic"><strong>${autor}:</strong> "${texto.replace(/<br>/g, '"<br><br>"')}"</p>`;
+                break;
+            case 'polaroid':
+                html += `<div class="pol-img">FOTO CORROMPIDA</div>
+                         <div style="font-family:'Kalam'; font-size:1.3rem; margin-top:10px; color:#1a237e">${texto}</div>
+                         <div style="text-align:right; font-size:0.8rem; color:#999; margin-top:20px">${data} / ${titulo}</div>`;
+                break;
+        }
+
+        el.innerHTML = html;
+    }
+    window.onload = render;
+</script>
+
+</body>
+</html>
